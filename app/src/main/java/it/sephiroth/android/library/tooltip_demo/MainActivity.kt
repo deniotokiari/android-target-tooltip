@@ -57,7 +57,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     ?.doOnFailure { }
                     ?.doOnShown {}
-                    ?.show(button, gravity, true)
+                    ?.show(button, gravity)
         }
 
         button2.setOnClickListener {

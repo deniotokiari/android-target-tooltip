@@ -25,7 +25,7 @@ class TestDialogFragment : DialogFragment() {
                 .showDuration(0)
                 .text("This is a dialog")
                 .create()
-                .show(button, Tooltip.Gravity.TOP, false)
+                .show(button, Tooltip.Gravity.TOP)
         }
     }
 
