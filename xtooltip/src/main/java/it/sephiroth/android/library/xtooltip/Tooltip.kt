@@ -45,7 +45,7 @@ import java.util.*
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
  * OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-class Tooltip constructor(private val context: Context, builder: Builder) {
+class Tooltip private constructor(private val context: Context, builder: Builder) {
 
     private val windowManager: WindowManager =
             context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
@@ -85,7 +85,6 @@ class Tooltip constructor(private val context: Context, builder: Builder) {
     private var mEnterAnimation: Int
     private var mExitAnimation: Int
     private var mTextStyleResId: Int
-    private var mTouchOutside: (() -> Unit)? = null
 
     private var mViewOverlay: TooltipOverlay? = null
     private var mDrawable: TooltipTextDrawable? = null
@@ -198,8 +197,6 @@ class Tooltip constructor(private val context: Context, builder: Builder) {
         } ?: run {
             font?.let { mTypeface = Typefaces[context, it] }
         }
-
-        this.mTouchOutside = builder.touchOutsideListener
     }
 
     private var mFailureFunc: ((tooltip: Tooltip) -> Unit)? = null
@@ -648,30 +645,17 @@ class Tooltip constructor(private val context: Context, builder: Builder) {
         fadeOut()
     }
 
-    fun dismiss(delay: Long = 0L) {
+    fun dismiss() {
         if (isShowing && mPopupView != null) {
-            if (delay != 0L) {
-                mHandler.removeCallbacks(hideRunnable)
-                mHandler.postDelayed(hideRunnable, delay)
-            } else {
-                removeListeners(mAnchorView?.get())
-                removeCallbacks()
-                windowManager.removeView(mPopupView)
-                Timber.v("dismiss: $mPopupView")
-                mPopupView = null
-                isShowing = false
-                isVisible = false
+            removeListeners(mAnchorView?.get())
+            removeCallbacks()
+            windowManager.removeView(mPopupView)
+            Timber.v("dismiss: $mPopupView")
+            mPopupView = null
+            isShowing = false
+            isVisible = false
 
-                mHiddenFunc?.invoke(this)
-            }
-        }
-    }
-
-    private fun onTouchOutside() {
-        if (mTouchOutside == null) {
-            hide()
-        } else {
-            mTouchOutside?.invoke()
+            mHiddenFunc?.invoke(this)
         }
     }
 
@@ -778,15 +762,11 @@ class Tooltip constructor(private val context: Context, builder: Builder) {
             val containsTouch = r1.contains(event.x.toInt(), event.y.toInt())
 
             if (mClosePolicy.anywhere()) {
-                if (!containsTouch) {
-                    onTouchOutside()
-                } else {
-                    hide()
-                }
+                hide()
             } else if (mClosePolicy.inside() && containsTouch) {
                 hide()
             } else if (mClosePolicy.outside() && !containsTouch) {
-                onTouchOutside()
+                hide()
             }
 
             return mClosePolicy.consume()
@@ -863,7 +843,6 @@ class Tooltip constructor(private val context: Context, builder: Builder) {
         internal var activateDelay = 0L
         internal var followAnchor = false
         internal var animationStyle: Int? = null
-        internal var touchOutsideListener: (() -> Unit)? = null
 
         @LayoutRes
         internal var layoutId: Int? = null
@@ -958,11 +937,6 @@ class Tooltip constructor(private val context: Context, builder: Builder) {
 
         fun animationStyle(@StyleRes id: Int): Builder {
             this.animationStyle = id
-            return this
-        }
-
-        fun onOutsideTouchListener(listener: () -> Unit): Builder {
-            this.touchOutsideListener = listener
             return this
         }
 
